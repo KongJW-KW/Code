@@ -1,0 +1,197 @@
+package week3;
+import java.util.Scanner;
+
+public class infixToPostFix {
+	
+	static LinkList list = new LinkList();
+	static int top = -1;
+	static String cache = "";
+	
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		String infix, postfix;
+		System.out.println("Input an infix expression.");
+		Scanner sc = new Scanner(System.in);
+		infix = sc.next();
+		parenthesesCheck(infix);
+		postfix = inToPost(infix);
+		System.out.println("Infix : " + infix);
+		System.out.println("Postfix :" + postfix);
+	}
+	// '(', ')' pairness 체크 메소드
+	
+	static void parenthesesCheck(String input) {
+		int i=0;
+		int checker = 0;
+		while (i < input.length()) {
+			if(input.charAt(i) == '(') {
+				checker++; 
+			} else if(input.charAt(i) == ')') {
+				checker--;
+			}
+			i++;
+		}
+		if(checker == 0) {
+			System.out.println("Parentheses are pair.");
+		} else {
+			System.out.println("Parentheses are unpair.");
+		}
+	}
+	// infix to postfix method
+
+	static String inToPost(String infix) {
+		int i = 0;
+
+		String postfix = "";
+
+		while (i < infix.length()) {
+			if ((infix.charAt(i) >= '0' && infix.charAt(i) <= '9') || infix.charAt(i) == '.') {
+				cache += infix.charAt(i);
+				i++;
+			} else {
+				
+				// 그 외 operator는 linkedlist stack으로 관리한다.	
+				// 캐쉬에 값 존재 == 읽혀진 값이 있는상태
+				// 위 상태에서 operator를 읽으면 process symbol을 출력하고, cache에 operator 갱신 
+				
+				if (cache != "") {
+					postfix += " " + cache;
+					throwCache(cache);
+				}
+				cache += infix.charAt(i);
+				// operator 인식에 우선순위가 있음.
+				// 1. (, )
+				// 2. *, /
+				// 3. +, -
+				// )를 읽으면 stack에서 (가 나올떄까지 pop
+				// 위 사항을 고려해 아래 로직 구현
+				
+				
+				if (infix.charAt(i) == '(') {
+					list.push(infix.charAt(i));
+					i++;
+				} else if (infix.charAt(i) == ')') {
+					while (list.getTop() != '(') {
+						postfix += " " + list.pop();
+					}
+					list.pop();
+					i++;
+				} else {
+
+					if (top == -1) {
+						list.push(infix.charAt(i));
+						i++;
+					} else if (priority(infix.charAt(i)) <= priority(list.getTop())) {
+						postfix += " " + list.pop();
+
+						while (priority(list.getTop()) == priority(infix.charAt(i))) {
+							postfix += " " + list.pop();
+							if (top < 0) {
+								break;
+							}
+						}
+						list.push(infix.charAt(i));
+						i++;
+					} else if (priority(infix.charAt(i)) > priority(list.getTop())) {
+						list.push(infix.charAt(i));
+						i++;
+					}
+				}
+				throwCache(cache);
+			}
+		}
+
+		while (top != -1) {
+			postfix += " " + list.pop();
+		}
+		return postfix;
+	}
+	
+	// cache의 값을 출력하고 비운다.
+
+	static void throwCache(String str) {
+		System.out.println("Process symbol	'" + str + "'");
+		list.getStackValues();
+		cache = "";
+	}
+	
+	// 우선순위 리턴한다.
+
+	static int priority(char c) {
+		if (c == '+' || c == '-') {
+			return (1);
+		}
+
+		if (c == '*' || c == '/') {
+			return (2);
+		}
+
+		return 0;
+	}
+
+}
+
+//singly linked list class
+class LinkList {
+	private Link head;
+
+	public LinkList() {
+		head = null;
+	}
+	// 새로운 node 객체를 만들고, 연결한다.
+	// infixToPostFix 클래스에서 top 은 static으로 선언했기 때문에, 이 클래스에서 공유하고있다.
+
+	public void push(char d) {
+		Link newLink = new Link(d);
+		newLink.next = head;
+		infixToPostFix.top++;
+		head = newLink;
+	}
+	
+	// head가 가리키고 있는 노드(top node)를 이전의 노드로 옮긴다. 즉, top node의 연결을 해제한다.
+	// 만약, top == -1이면 잘못된 스택, 종료.
+	// stack의 maxsize를 정하지 않았기 때문에 의도적으로 크기를 아주 크게 늘리지 않는이상 stack overflow는 발생하지 않는다.
+
+	public char pop() {
+		if (infixToPostFix.top == -1) {
+			System.out.println("stack empty.");
+			System.exit(0);
+		}
+		Link temp = head;
+		head = head.next;
+		infixToPostFix.top--;
+		return temp.data;
+	}
+
+	// top node의 data 리턴
+	public char getTop() {
+		return head.data;
+	}
+
+	// stack status를 출력하기 위한 메소드
+	public void getStackValues() {
+		Link current = head;
+		System.out.println("stack status : ");
+		while (current != null) {
+			current.getStackValues();
+			current = current.next;
+		}
+	}
+
+	class Link {
+		public char data;
+		public Link next;
+
+		public Link(char d) {
+			data = d;
+		}
+
+		// 현재 노드의 data 출력
+		public void getStackValues() {
+			System.out.println("[" + data + "]");
+		}
+	}
+
+	}
+
+
